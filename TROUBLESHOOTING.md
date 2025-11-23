@@ -15,7 +15,12 @@ This error occurs when there's a version mismatch between NumPy and Pandas. Spec
 
 ### Solution
 
-**Option 1: Use the fix script (Recommended)**
+**Option 1: Use the simple batch script (Windows - Recommended)**
+```bash
+FIX_NUMPY_PANDAS.bat
+```
+
+**Option 2: Use the fix script (Recommended)**
 ```bash
 # Windows
 fix_dependencies.bat
@@ -84,6 +89,37 @@ print(f"Pandas: {pd.__version__}")
    ```bash
    which python  # Linux/Mac
    where python  # Windows
+   ```
+
+### Additional Solutions
+
+**If the error persists after fixing:**
+
+1. **Restart your IDE/terminal** - Python caches imports, restart to clear them
+
+2. **Check you're using the correct Python**:
+   ```bash
+   python --version
+   which python  # Linux/Mac
+   where python  # Windows
+   ```
+
+3. **Run diagnostic script**:
+   ```bash
+   python diagnose_environment.py
+   ```
+
+4. **Force reinstall with specific versions**:
+   ```bash
+   python -m pip install --upgrade --force-reinstall --no-cache-dir numpy==1.26.4 pandas==2.1.4
+   ```
+
+5. **Use a virtual environment** (Recommended for isolation):
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate  # Windows
+   source venv/bin/activate  # Linux/Mac
+   pip install -r requirements.txt
    ```
 
 ### Prevention
