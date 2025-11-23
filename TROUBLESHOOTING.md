@@ -15,7 +15,19 @@ This error occurs when there's a version mismatch between NumPy and Pandas. Spec
 
 ### Solution
 
-**Option 1: Use the simple batch script (Windows - Recommended)**
+**For Anaconda Users (Most Common):**
+```bash
+FIX_ANACONDA_NUMPY_PANDAS.bat
+```
+
+Or manually:
+```bash
+C:\Users\hazem\anaconda3\python.exe -m pip uninstall -y numpy pandas
+C:\Users\hazem\anaconda3\python.exe -m pip install --no-cache-dir --force-reinstall "numpy==1.26.4"
+C:\Users\hazem\anaconda3\python.exe -m pip install --no-cache-dir --force-reinstall "pandas==2.1.4"
+```
+
+**For System Python Users:**
 ```bash
 FIX_NUMPY_PANDAS.bat
 ```
