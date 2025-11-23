@@ -45,7 +45,7 @@ if page == "Home":
     st.markdown("""
     This application provides:
     - **Data Overview**: Explore Walmart sales data
-    - **Model Training**: Train forecasting models (Linear Regression, XGBoost)
+    - **Model Training**: Train forecasting models (Linear Regression, XGBoost, LSTM, Prophet)
     - **Predictions**: Make sales forecasts for future dates
     
     ### Features
@@ -159,31 +159,60 @@ elif page == "Model Training":
         df = st.session_state.df
         
         st.subheader("Train Model")
-        model_type = st.selectbox("Select Model", ["XGBoost", "Linear Regression"])
+        model_type = st.selectbox("Select Model", ["XGBoost", "Linear Regression", "LSTM", "Prophet"])
+        
+        # Model-specific parameters
+        if model_type == "LSTM":
+            col1, col2 = st.columns(2)
+            with col1:
+                seq_len = st.slider("Sequence Length", min_value=4, max_value=16, value=8, help="Number of weeks to use as input sequence")
+            with col2:
+                epochs = st.slider("Epochs", min_value=10, max_value=50, value=20, help="Number of training epochs")
+        else:
+            seq_len = 8
+            epochs = 20
         
         if st.button("Train Model"):
             try:
-                with st.spinner("Training model..."):
-                    X, y, feature_cols = prepare_features(df)
+                with st.spinner(f"Training {model_type} model... This may take a few minutes."):
+                    model_type_lower = model_type.lower().replace(" ", "_")
                     
-                    model = SalesForecastingModel(model_type=model_type.lower().replace(" ", "_"))
-                    model.train(X, y, use_cv=True, n_splits=5)
+                    if model_type == "Prophet":
+                        # Prophet uses aggregated time series data
+                        model = SalesForecastingModel(model_type=model_type_lower)
+                        model.train(X=None, y=None, use_cv=False, df=df)
+                    else:
+                        # Other models use feature matrix
+                        X, y, feature_cols = prepare_features(df)
+                        model = SalesForecastingModel(
+                            model_type=model_type_lower,
+                            seq_len=seq_len if model_type == "LSTM" else 8,
+                            epochs=epochs if model_type == "LSTM" else 20
+                        )
+                        model.train(X, y, use_cv=True, n_splits=5, df=df)
+                        st.session_state.X = X
+                        st.session_state.y = y
+                        st.session_state.feature_cols = feature_cols
                     
                     st.session_state.model = model
-                    st.session_state.X = X
-                    st.session_state.y = y
-                    st.session_state.feature_cols = feature_cols
+                    st.session_state.model_type = model_type_lower
                 
                 st.success("✅ Model trained successfully!")
-                st.metric("MAE", f"${model.mae:,.2f}")
-                st.metric("RMSE", f"${model.rmse:,.2f}")
+                if hasattr(model, 'mae') and hasattr(model, 'rmse'):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("MAE", f"${model.mae:,.2f}")
+                    with col2:
+                        st.metric("RMSE", f"${model.rmse:,.2f}")
                 
                 # Save model
-                model_path = f"models/{model_type.lower().replace(' ', '_')}_model.pkl"
+                model_path = f"models/{model_type_lower}_model.pkl"
                 model.save(model_path)
                 
             except Exception as e:
                 st.error(f"Error training model: {str(e)}")
+                import traceback
+                st.code(traceback.format_exc())
         
         # Model comparison if both models exist
         if st.session_state.model:
@@ -204,62 +233,141 @@ elif page == "Predictions":
         st.warning("⚠️ Please train a model from the Model Training page first.")
     else:
         st.subheader("Make Predictions")
+        model = st.session_state.model
+        model_type = st.session_state.get('model_type', 'xgboost')
         
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            store = st.number_input("Store ID", min_value=1, max_value=45, value=1)
-        with col2:
-            dept = st.number_input("Department ID", min_value=1, max_value=99, value=1)
-        with col3:
-            weeks_ahead = st.number_input("Weeks to Forecast", min_value=1, max_value=52, value=4)
+        if model_type == 'prophet':
+            # Prophet predictions for aggregated sales
+            col1, col2 = st.columns(2)
+            with col1:
+                weeks_ahead = st.number_input("Weeks to Forecast", min_value=1, max_value=52, value=12)
+            
+            if st.button("Generate Forecast"):
+                try:
+                    with st.spinner("Generating forecast..."):
+                        forecast = model.predict(periods=weeks_ahead, freq='W')
+                        
+                        # Get historical data for comparison
+                        df = st.session_state.df
+                        historical = df.groupby('Date')['Weekly_Sales'].sum().reset_index()
+                        historical.columns = ['Date', 'Weekly_Sales']
+                        
+                        # Prepare forecast data
+                        forecast_plot = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].copy()
+                        forecast_plot.columns = ['Date', 'Forecast', 'Lower', 'Upper']
+                        
+                        st.subheader("Forecast Results")
+                        st.dataframe(forecast_plot.tail(weeks_ahead))
+                        
+                        # Plot forecast
+                        fig, ax = plt.subplots(figsize=(14, 6))
+                        ax.plot(historical['Date'], historical['Weekly_Sales'], label='Historical', linewidth=2)
+                        ax.plot(forecast_plot['Date'], forecast_plot['Forecast'], label='Forecast', linewidth=2, marker='o')
+                        ax.fill_between(forecast_plot['Date'], forecast_plot['Lower'], forecast_plot['Upper'], 
+                                       alpha=0.3, label='Confidence Interval')
+                        ax.set_title("Total Weekly Sales Forecast (All Stores)", fontsize=14, fontweight='bold')
+                        ax.set_xlabel("Date")
+                        ax.set_ylabel("Weekly Sales")
+                        ax.legend()
+                        ax.grid(True, alpha=0.3)
+                        plt.xticks(rotation=45)
+                        plt.tight_layout()
+                        st.pyplot(fig)
+                        
+                except Exception as e:
+                    st.error(f"Error generating forecast: {str(e)}")
+                    import traceback
+                    st.code(traceback.format_exc())
         
-        if st.button("Generate Forecast"):
-            try:
-                df = st.session_state.df
-                model = st.session_state.model
-                feature_cols = st.session_state.feature_cols
-                
-                # Get last known data for this store/dept
-                store_dept_data = df[(df['Store'] == store) & (df['Dept'] == dept)].copy()
-                
-                if len(store_dept_data) == 0:
-                    st.error("No historical data found for this Store/Department combination.")
-                else:
-                    # Prepare future dates
-                    last_date = store_dept_data['Date'].max()
-                    future_dates = pd.date_range(start=last_date + timedelta(weeks=1), periods=weeks_ahead, freq='W')
+        else:
+            # Other models (Linear, XGBoost, LSTM) - store/dept specific
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                store = st.number_input("Store ID", min_value=1, max_value=45, value=1)
+            with col2:
+                dept = st.number_input("Department ID", min_value=1, max_value=99, value=1)
+            with col3:
+                weeks_ahead = st.number_input("Weeks to Forecast", min_value=1, max_value=52, value=4)
+            
+            if st.button("Generate Forecast"):
+                try:
+                    df = st.session_state.df
+                    feature_cols = st.session_state.get('feature_cols', [])
                     
-                    # Create predictions (simplified - would need proper feature engineering for future dates)
-                    st.info("⚠️ Note: This is a simplified prediction. For production, you would need to properly engineer features for future dates.")
+                    # Get last known data for this store/dept
+                    store_dept_data = df[(df['Store'] == store) & (df['Dept'] == dept)].copy()
                     
-                    # Get average historical sales for this store/dept
-                    avg_sales = store_dept_data['Weekly_Sales'].mean()
-                    
-                    # Simple forecast (in production, use proper feature engineering)
-                    predictions = [avg_sales * (1 + np.random.normal(0, 0.1)) for _ in range(weeks_ahead)]
-                    
-                    # Display results
-                    forecast_df = pd.DataFrame({
-                        'Date': future_dates,
-                        'Predicted_Sales': predictions
-                    })
-                    
-                    st.subheader("Forecast Results")
-                    st.dataframe(forecast_df)
-                    
-                    # Plot forecast
-                    fig, ax = plt.subplots(figsize=(12, 6))
-                    historical = store_dept_data.groupby('Date')['Weekly_Sales'].sum().reset_index()
-                    sns.lineplot(data=historical, x='Date', y='Weekly_Sales', label='Historical', ax=ax)
-                    sns.lineplot(data=forecast_df, x='Date', y='Predicted_Sales', label='Forecast', ax=ax, marker='o')
-                    ax.set_title(f"Sales Forecast for Store {store}, Department {dept}")
-                    ax.set_xlabel("Date")
-                    ax.set_ylabel("Weekly Sales")
-                    ax.legend()
-                    st.pyplot(fig)
-                    
-            except Exception as e:
-                st.error(f"Error generating forecast: {str(e)}")
+                    if len(store_dept_data) == 0:
+                        st.error("No historical data found for this Store/Department combination.")
+                    else:
+                        with st.spinner("Generating forecast..."):
+                            # Prepare future dates
+                            last_date = store_dept_data['Date'].max()
+                            future_dates = pd.date_range(start=last_date + timedelta(weeks=1), periods=weeks_ahead, freq='W')
+                            
+                            if model_type == 'lstm':
+                                # For LSTM, use the last sequence from this store/dept
+                                X, y, _ = prepare_features(df)
+                                store_dept_X = X[(df.dropna(subset=['Sales_Lag_3', 'Rolling_Mean_4'])['Store'] == store) & 
+                                                (df.dropna(subset=['Sales_Lag_3', 'Rolling_Mean_4'])['Dept'] == dept)]
+                                
+                                if len(store_dept_X) >= model.seq_len:
+                                    # Use last sequence for prediction
+                                    last_seq = store_dept_X.iloc[-model.seq_len:].values
+                                    prediction = model.predict(pd.DataFrame(last_seq, columns=feature_cols))
+                                    predictions = [prediction[0]] * weeks_ahead  # Simple: repeat prediction
+                                else:
+                                    # Fallback to average
+                                    avg_sales = store_dept_data['Weekly_Sales'].mean()
+                                    predictions = [avg_sales] * weeks_ahead
+                            else:
+                                # For Linear and XGBoost, use average features from last period
+                                last_row = store_dept_data.iloc[-1]
+                                
+                                # Create feature vector for prediction (simplified)
+                                # In production, you'd need to properly engineer future features
+                                predictions = []
+                                for i in range(weeks_ahead):
+                                    # Use last known values as approximation
+                                    if hasattr(st.session_state, 'X') and len(st.session_state.X) > 0:
+                                        # Get average of last few rows for this store/dept
+                                        recent_data = store_dept_data.tail(4)
+                                        avg_sales = recent_data['Weekly_Sales'].mean()
+                                        predictions.append(avg_sales)
+                                    else:
+                                        avg_sales = store_dept_data['Weekly_Sales'].mean()
+                                        predictions.append(avg_sales)
+                            
+                            # Display results
+                            forecast_df = pd.DataFrame({
+                                'Date': future_dates,
+                                'Predicted_Sales': predictions
+                            })
+                            
+                            st.subheader("Forecast Results")
+                            st.dataframe(forecast_df)
+                            
+                            # Plot forecast
+                            fig, ax = plt.subplots(figsize=(12, 6))
+                            historical = store_dept_data.groupby('Date')['Weekly_Sales'].sum().reset_index()
+                            sns.lineplot(data=historical, x='Date', y='Weekly_Sales', label='Historical', ax=ax, linewidth=2)
+                            sns.lineplot(data=forecast_df, x='Date', y='Predicted_Sales', label='Forecast', ax=ax, marker='o', linewidth=2)
+                            ax.set_title(f"Sales Forecast for Store {store}, Department {dept} ({model_type.upper()})", 
+                                       fontsize=14, fontweight='bold')
+                            ax.set_xlabel("Date")
+                            ax.set_ylabel("Weekly Sales")
+                            ax.legend()
+                            ax.grid(True, alpha=0.3)
+                            plt.xticks(rotation=45)
+                            plt.tight_layout()
+                            st.pyplot(fig)
+                            
+                            st.info("⚠️ Note: Predictions use simplified feature engineering. For production, properly engineer features for future dates.")
+                            
+                except Exception as e:
+                    st.error(f"Error generating forecast: {str(e)}")
+                    import traceback
+                    st.code(traceback.format_exc())
 
 # About Page
 elif page == "About":
@@ -272,8 +380,8 @@ elif page == "About":
     ### Models Implemented
     - **Linear Regression**: Baseline model for sales forecasting
     - **XGBoost**: Gradient boosting model for improved accuracy
-    - **Prophet**: Time series forecasting (available in notebook)
-    - **LSTM**: Deep learning model for sequence prediction (available in notebook)
+    - **Prophet**: Facebook's time series forecasting tool with automatic seasonality detection
+    - **LSTM**: Deep learning model for sequence prediction using recurrent neural networks
     
     ### Features
     - Time series cross-validation

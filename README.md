@@ -112,7 +112,16 @@ X, y, feature_cols = prepare_features(df)
 # Train model
 model = SalesForecastingModel(model_type='xgboost')
 model.train(X, y)
-predictions = model.predict(X_test)
+
+# For Prophet
+prophet_model = SalesForecastingModel(model_type='prophet')
+prophet_model.train(X=None, y=None, df=df)  # df must have Date and Weekly_Sales columns
+forecast = prophet_model.predict(periods=12, freq='W')
+
+# For LSTM
+lstm_model = SalesForecastingModel(model_type='lstm', seq_len=8, epochs=20)
+lstm_model.train(X, y)
+predictions = lstm_model.predict(X_test)
 ```
 
 ## 🤖 Models
@@ -130,12 +139,16 @@ predictions = model.predict(X_test)
 ### Prophet
 - Facebook's time series forecasting tool
 - Handles seasonality and holidays automatically
-- Available in the notebook
+- Works with aggregated time series data
+- Provides confidence intervals for forecasts
+- Best for overall sales trends
 
 ### LSTM
 - Deep learning model for sequence prediction
-- Captures long-term dependencies
-- Available in the notebook
+- Captures long-term dependencies in time series
+- Uses sequence-based learning (configurable sequence length)
+- Requires more computational resources
+- Best for capturing complex temporal patterns
 
 ## 🚢 Deployment
 
@@ -186,11 +199,12 @@ The application expects three CSV files:
 
 ## 📈 Model Performance
 
-| Model | MAE | RMSE |
-|-------|-----|------|
-| Linear Regression | 2,418.52 | 6,824.80 |
-| XGBoost | 1,828.83 | 4,541.84 |
-| LSTM | Variable | Variable |
+| Model | MAE | RMSE | Notes |
+|-------|-----|------|-------|
+| Linear Regression | 2,418.52 | 6,824.80 | Fast, baseline model |
+| XGBoost | 1,828.83 | 4,541.84 | Best tree-based performance |
+| LSTM | Variable | Variable | Depends on sequence length and epochs |
+| Prophet | Variable | Variable | Best for aggregated time series |
 
 ## 🔧 Configuration
 

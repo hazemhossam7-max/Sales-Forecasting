@@ -49,6 +49,8 @@ mlartifacts/
 models/*.pkl
 models/*.h5
 models/*.joblib
+models/*_model.h5
+models/*_scaler.pkl
 *.pkl
 *.h5
 *.joblib
@@ -65,7 +67,4 @@ temp_*.csv
 # OS
 .DS_Store
 Thumbs.db
-
-# Docker
-.dockerignore
 
