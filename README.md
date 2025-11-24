@@ -150,15 +150,6 @@ docker run -d -p 8501:8501 --name sales-forecast sales-forecasting:latest
 3. Connect your repository
 4. Deploy!
 
-#### Heroku
-```bash
-heroku create sales-forecasting-app
-git push heroku main
-```
-
-#### AWS/GCP/Azure
-- Use the Dockerfile to build and push to container registries
-- Deploy using ECS, Cloud Run, or Container Instances
 
 ### Environment Variables
 
@@ -208,25 +199,4 @@ model.model.set_params(n_estimators=300, max_depth=8, learning_rate=0.05)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👥 Authors
-
-- Your Name - Initial work
-
-## 🙏 Acknowledgments
-
-- Walmart for providing the dataset
-- Prophet team for the time series library
-- Streamlit for the web framework
-
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
-
----
-
-**Note**: This project is for educational purposes. Make sure to handle data privacy and comply with all relevant regulations when working with real sales data.
 
