@@ -28,16 +28,16 @@ A comprehensive machine learning project for forecasting Walmart store sales usi
 
 ```
 sales-forecasting/
-├── src/
-│   ├── __init__.py
-│   ├── data_loader.py      # Data loading and preprocessing
-│   └── models.py           # Model training and prediction
-├── models/                  # Saved models (gitignored)
-├── app.py                  # Streamlit web application
-├── requirements.txt        # Python dependencies
-├── Dockerfile             # Docker configuration
-├── .dockerignore          # Docker ignore file
-├── .gitignore            # Git ignore file
+├── config/                      # Configuration files
+│   ├── requirements.txt        # Python dependencies
+│   └── setup.py               # Package configuration
+├── models/                     # Trained model files
+├── src/                        # Source code
+│   ├── data_processor.py      # Data loading and preprocessing
+│   └── forecasting_models.py  # Model definitions
+├── sales_forecasting_app.py   # Main Streamlit application
+├── README.md                  # Project documentation
+└── .gitignore                 # Git ignore file
 ├── README.md             # This file
 └── sales forcasting( depi final project).ipynb  # Original notebook
 ```
@@ -49,36 +49,12 @@ sales-forecasting/
 - Python 3.10 or higher
 - pip package manager
 
-### Local Installation
-
-1. Clone the repository:
-```bash
-git clone <your-repo-url>
-cd sales-forecasting
-```
-
-2. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
 3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-### Docker Installation
 
-1. Build the Docker image:
-```bash
-docker build -t sales-forecasting .
-```
-
-2. Run the container:
-```bash
-docker run -p 8501:8501 sales-forecasting
-```
 
 ## 💻 Usage
 
@@ -152,15 +128,6 @@ docker run -d -p 8501:8501 --name sales-forecast sales-forecasting:latest
 3. Connect your repository
 4. Deploy!
 
-#### Heroku
-```bash
-heroku create sales-forecasting-app
-git push heroku main
-```
-
-#### AWS/GCP/Azure
-- Use the Dockerfile to build and push to container registries
-- Deploy using ECS, Cloud Run, or Container Instances
 
 ### Environment Variables
 
@@ -210,25 +177,4 @@ model.model.set_params(n_estimators=300, max_depth=8, learning_rate=0.05)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👥 Authors
-
-- Your Name - Initial work
-
-## 🙏 Acknowledgments
-
-- Walmart for providing the dataset
-- Prophet team for the time series library
-- Streamlit for the web framework
-
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
-
----
-
-**Note**: This project is for educational purposes. Make sure to handle data privacy and comply with all relevant regulations when working with real sales data.
 

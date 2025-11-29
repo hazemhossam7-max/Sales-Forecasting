@@ -13,8 +13,8 @@ import sys
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from src.data_loader import load_data, feature_engineering, prepare_features
-from src.models import SalesForecastingModel, MAPE, WAPE
+from src.data_processor import load_data, feature_engineering, prepare_features
+from src.forecasting_models import SalesForecastingModel, MAPE, WAPE
 
 # Page configuration
 st.set_page_config(
