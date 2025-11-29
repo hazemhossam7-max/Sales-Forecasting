@@ -28,16 +28,16 @@ A comprehensive machine learning project for forecasting Walmart store sales usi
 
 ```
 sales-forecasting/
-├── src/
-│   ├── __init__.py
-│   ├── data_loader.py      # Data loading and preprocessing
-│   └── models.py           # Model training and prediction
-├── models/                  # Saved models (gitignored)
-├── app.py                  # Streamlit web application
-├── requirements.txt        # Python dependencies
-├── Dockerfile             # Docker configuration
-├── .dockerignore          # Docker ignore file
-├── .gitignore            # Git ignore file
+├── config/                      # Configuration files
+│   ├── requirements.txt        # Python dependencies
+│   └── setup.py               # Package configuration
+├── models/                     # Trained model files
+├── src/                        # Source code
+│   ├── data_processor.py      # Data loading and preprocessing
+│   └── forecasting_models.py  # Model definitions
+├── sales_forecasting_app.py   # Main Streamlit application
+├── README.md                  # Project documentation
+└── .gitignore                 # Git ignore file
 ├── README.md             # This file
 └── sales forcasting( depi final project).ipynb  # Original notebook
 ```
