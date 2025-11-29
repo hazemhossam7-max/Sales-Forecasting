@@ -161,19 +161,22 @@ elif page == "Model Training":
         st.subheader("Train Model")
         model_type = st.selectbox("Select Model", ["XGBoost", "Linear Regression"])
         
+        # Map human-readable selection to internal model key
+        model_type_key = "xgboost" if model_type == "XGBoost" else "linear"
+
         if st.button("Train Model"):
             try:
                 with st.spinner("Training model..."):
                     X, y, feature_cols = prepare_features(df)
                     
-                    model = SalesForecastingModel(model_type=model_type.lower().replace(" ", "_"))
+                    model = SalesForecastingModel(model_type=model_type_key)
                     model.train(X, y, use_cv=True, n_splits=5)
                     
                     st.session_state.model = model
                     st.session_state.X = X
                     st.session_state.y = y
                     st.session_state.feature_cols = feature_cols
-                    st.session_state.model_type = model_type.lower().replace(" ", "_")
+                    st.session_state.model_type = model_type_key
                 
                 st.success("✅ Model trained successfully!")
                 if hasattr(model, 'mae') and hasattr(model, 'rmse'):
@@ -184,7 +187,7 @@ elif page == "Model Training":
                         st.metric("RMSE", f"${model.rmse:,.2f}")
                 
                 # Save model
-                model_path = f"models/{model_type_lower}_model.pkl"
+                model_path = f"models/{model_type_key}_model.pkl"
                 model.save(model_path)
                 
             except Exception as e:
@@ -220,6 +223,8 @@ elif page == "Predictions":
         with col3:
             weeks_ahead = st.number_input("Weeks to Forecast", min_value=1, max_value=52, value=4)
         
+        download_key = f"download_{store}_{dept}"
+
         if st.button("Generate Forecast"):
             try:
                 df = st.session_state.df
@@ -248,7 +253,10 @@ elif page == "Predictions":
                     # Display results
                     forecast_df = pd.DataFrame({
                         'Date': future_dates,
-                        'Predicted_Sales': predictions
+                        'Predicted_Sales': predictions,
+                        'Store': store,
+                        'Dept': dept,
+                        'Model': st.session_state.get('model_type', 'xgboost').upper()
                     })
                     
                     st.subheader("Forecast Results")
@@ -264,6 +272,22 @@ elif page == "Predictions":
                     ax.set_ylabel("Weekly Sales")
                     ax.legend()
                     st.pyplot(fig)
+                    
+                    # Persist predictions for Power BI usage
+                    os.makedirs("models", exist_ok=True)
+                    output_filename = f"models/{st.session_state.get('model_type', 'model')}_store{store}_dept{dept}.csv"
+                    forecast_df.to_csv(output_filename, index=False)
+                    st.success(f"Predictions saved to {output_filename}")
+                    
+                    # Provide download button
+                    csv_bytes = forecast_df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="Download predictions as CSV",
+                        data=csv_bytes,
+                        file_name=f"predictions_store{store}_dept{dept}.csv",
+                        mime="text/csv",
+                        key=download_key
+                    )
                     
             except Exception as e:
                 st.error(f"Error generating forecast: {str(e)}")

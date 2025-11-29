@@ -91,6 +91,8 @@ streamlit run app.py
 
 2. Open your browser and navigate to `http://localhost:8501`
 
+3. After generating predictions, use the built-in download button (or grab the CSV saved in the `models/` folder) to feed the results into Power BI or any BI tool.
+
 ### Using the Notebook
 
 Open and run the Jupyter notebook:
