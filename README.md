@@ -49,36 +49,12 @@ sales-forecasting/
 - Python 3.10 or higher
 - pip package manager
 
-### Local Installation
-
-1. Clone the repository:
-```bash
-git clone <your-repo-url>
-cd sales-forecasting
-```
-
-2. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
 3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-### Docker Installation
 
-1. Build the Docker image:
-```bash
-docker build -t sales-forecasting .
-```
-
-2. Run the container:
-```bash
-docker run -p 8501:8501 sales-forecasting
-```
 
 ## 💻 Usage
 
