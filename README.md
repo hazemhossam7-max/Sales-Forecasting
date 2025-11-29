@@ -217,12 +217,7 @@ The application expects three CSV files:
 - `features.csv`: External features with columns: Store, Date, Temperature, Fuel_Price, CPI, Unemployment, MarkDown1-5, IsHoliday
 - `stores.csv`: Store information with columns: Store, Type, Size
 
-## 📈 Model Performance
 
-| Model | MAE | RMSE | Notes |
-|-------|-----|------|-------|
-| Linear Regression | 2,418.52 | 6,824.80 | Fast, baseline model |
-| XGBoost | 1,828.83 | 4,541.84 | Best tree-based performance |
 
 ## 🔧 Configuration
 
